@@ -99,3 +99,12 @@ ENV/
 
 # mypy
 .mypy_cache/
+
+# LaTeX output
+_minted-modules/
+*.aux
+*.fdb_latexmk
+*.fls
+
+# Vim temporary files
+.*.swp
