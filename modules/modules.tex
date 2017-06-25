@@ -10,12 +10,24 @@
     ]{geometry}
 \usepackage{fancybox}
 \usepackage{url}
+\usepackage[
+    breaklinks,
+    citecolor=blue,
+    colorlinks,
+    linkcolor=blue,
+    urlcolor=blue,
+    ]{hyperref}
 \usepackage{minted}
 \usepackage{color}
 \usepackage{graphicx}
 \usepackage{epstopdf}
 \usepackage{fancyhdr}
-
+\usepackage[
+    comma,
+    numbers,
+    sort&compress,
+    square,
+    ]{natbib}
 \usepackage{amsthm}
 \usepackage{multicol}
 
@@ -28,45 +40,48 @@
 \maketitle
 \section{Aim of this paper}
 
-This paper aims to be the definitive guide to arguing about Modules. To do
-that, it presents all the questions and decisions that need to be taken in
-order to arrive at a coherent proposal.
+The Modules TS \citep{N4647} has generated much discussion. This paper aims to
+capture the questions and decisions that are necessary to arrive at a coherent
+proposal.
 
-This paper takes no stance on any of the issues highlighted. Where possible, the
-differing opinions are cited and summarized in the summary section for the
-question.
+This paper takes no stance on any of the issues highlighted. Where possible,
+the differing opinions are cited and summarised in the discussion of each
+section. It is likely that there are issues and discussions of which the
+authors are not aware. We do not claim to represent every facet of the design
+space, and expect further iteration for refinement.
 
-The hope of the authors of this paper is to untangle the various issues people
-have with modules, so that constructive argument can happen along the issues,
-and not around FUD. The issues are presented in as orthogonal a manner as
+The goal of the authors of this paper is to disentangle the various issues
+people have with modules, so that constructive argument can happen along the
+issues and requirements. The issues are presented in as orthogonal a manner as
 possible, so that loops in arguing are avoidable.
 
 
 \section{What Are Modules For?}
 
 This section presents all the various answers to the titular question that the
-authors are aware of. It is highly probable that not all the answers are
-mutually compatible, realistic, or even on topic. However, unless stated and
+authors are aware of. It is probable that not all the answers are mutually
+compatible, realistic, or even on topic. However, unless stated and
 subsequently addressed, they will keep surfacing.
 
 
 \subsection{Reducing the need for detail namespaces}
 
-Name lookup is a highly convoluted, flexible, and powerful feature of C++. It
-is no secret that keeping the set of visible names sane in user code while
-somehow allowing customization points keeps library authors awake at night. 
+Name lookup is a flexible and powerful feature of C++, but the rules are
+complex and it is no secret that the set of names that are visible in user code
+is often larger than would be desirable. Customisation points further
+complicate matters.
 
-To do this, private (and more and more often) public features of libraries are
+To do this, private (and increasingly often) public features of libraries are
 implemented in a library-specific detail namespace, with externally visible
 names pulled into the public-facing main namespace with \texttt{using}
 directives.
 
-This keeps implementations sane, but compiler error messages then include the
-detail namespace, making names longer than needed.
+This keeps implementations sane, but has the unfortunate side-effect of making
+compiler diagnostic messages longer than would be ideal.
 
-It would be nice for modules to obviate the need to use detail namespaces to
-hide names by allowing name lookup outside the module to only find entities that
-are explicitly exported.
+One view is that it would be nice for modules to obviate the need to use detail
+namespaces to hide names by allowing name lookup outside the module to only
+find entities that are explicitly exported.
 
 
 \subsection{Strict ordering guarantees for code inclusion}
@@ -243,5 +258,14 @@ We would like to thank Vittorio Romeo for a few suggestions, and Jackie Kay and
 Louis Dionne for proofreading the paper.
 
 \bibliographystyle{amsplain}
-% \bibliography{mybibliography}
+
+\begin{thebibliography}{9}
+
+\bibitem{N4647}
+    Gabriel Dos Reis.
+        \textit{Working Draft, Extensions to C++ for Modules (N4647)}
+        \url{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4647.pdf}
+
+\end{thebibliography}
+
 \end{document}

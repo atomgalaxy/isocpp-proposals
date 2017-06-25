@@ -105,6 +105,7 @@ _minted-modules/
 *.aux
 *.fdb_latexmk
 *.fls
+*.out
 
 # Vim temporary files
 .*.swp
