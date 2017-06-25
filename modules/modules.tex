@@ -26,7 +26,7 @@
 
 \begin{document}
 \maketitle
-\begin{multicols}{2}
+%\begin{multicols}{2}
 \section{Aim of this paper}
 
 This paper aims to be the definitive guide to arguing about Modules. To do
@@ -91,10 +91,11 @@ is one of the reasons all names in it need to use the \texttt{\_\_name} and
 Regular libraries deal with this problem by assuming it won't happen and going
 “la la la this is real-world code”.
 
-If modules specified a strict order of \emph{the only code that “happened”
-above this module is the code it specifically imports - and that goes
-NON-transitively!}, this is no longer an issue, and the standard library, along
-with every other library, can stop worrying about macros rewriting its code.
+If modules specified a strict ordering guarantee of \emph{the only code that
+“happened” above this module is the code it specifically imports - and that goes
+NON-transitively for name visibility}, this is no longer an issue, and the
+standard library, along with every other library, can stop worrying about macros
+rewriting its code.
 
 
 \subsection{Replace Precompiled Headers: the \emph{Parse It Once} Argument}
@@ -127,7 +128,7 @@ introduce namespaces, completing the C++-is-a-better-python dream\footnote{The
 authors make no claim as to whether this is a dream worth having}.
 
 Unfortunately for this one, it is impossible - modules need to be able to
-provide overloads to \texttt{std::hash}, at least, which necessitates the
+provide specializations of \texttt{std::hash}, at least, which necessitates the
 orthogonality of modules and namespaces.
 
 However, some expect that modules and namespaces, while orthogonal, will be
@@ -147,10 +148,15 @@ module foo::bar;
 
 struct mystruct; // foo::bar::mystruct;
 ::std::hash<mystruct> {
-  std::size_t operator(mystruct const&) const;
+  std::size_t operator(mystruct const&)
+      const;
 };
 \end{minted}
 
+The opt-out has been specified in a paper by Tristan Brindle: \emph{Allowing
+Class Template Specializations in Unrelated Namespaces}\footnote{
+\url{https://github.com/tcbrindle/specialization_proposal/blob/master/P0665r0.pdf}}
+.
 
 \subsubsection{Module-namespaces: Introduce a scope}
 
@@ -166,13 +172,15 @@ module namespace foo::baz {
   // look ma, two modules per file!
   struct mystruct;
 }
-// this stuff only visible within the file
-// cannot be exported.
+// Entities defined here are
+// only visible within the
+// file and cannot be exported.
 namespace std {
 struct std::hash<foo::bar::mystruct>
 {
-   std::size_t operator(foo::bar::mystruct const&)
-     const;
+   std::size_t operator(
+         foo::bar::mystruct const&)
+       const;
 };
 } // std
 \end{minted}
@@ -232,7 +240,7 @@ Again, on the flip side, it means libraries that are \texttt{import}ed will
 \emph{never} leak macros.
 
 
-\end{multicols}
+%\end{multicols}
 \bibliographystyle{amsplain}
 % \bibliography{mybibliography}
 \end{document}
