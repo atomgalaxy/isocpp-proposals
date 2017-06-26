@@ -71,8 +71,14 @@ authors are aware of. It is probable that not all the answers are mutually
 compatible, realistic, or even on topic. However, unless stated and
 subsequently addressed, they will keep surfacing.
 
+Put another way, the subsections should be read in the context of \emph{Should
+this be a design goal for modules?}
 
-\subsection{Reducing the need for detail namespaces}
+\subsection{Tight control of visible names and entities}
+
+The various subsections deal with the visibility semantics of modules. 
+
+\subsubsection{Control of exported names: Reduce the need for detail namespaces}
 
 Name lookup is a flexible and powerful feature of C++, but the rules are
 complex and it is no secret that the set of names (including names of macros)
@@ -92,7 +98,8 @@ namespaces to hide names by allowing name lookup outside the module to only
 find entities that are explicitly exported.
 
 
-\subsection{Strict ordering guarantees for code inclusion}
+\subsubsection{Control of imported names: Strict ordering guarantees for code
+inclusion}
 
 Another issue that keeps library authors awake at night is the introduction of
 new names into their namespaces due to code like
@@ -123,24 +130,31 @@ possibly applied \emph{non}-transitively for name visibility -- then this issue
 disappears, and the standard library (along with every other library) can stop
 worrying about macros rewriting its code.
 
-\subsection{Transitivity of name visibility}
+\subsubsection{Transitivity of name visibility}
 
 Should \texttt{import moduleA;} also import the names from modules imported by
 \texttt{moduleA} transitively, or not?
 
-\subsubsection{Pro transitive}
+\paragraph{Pro transitive}
 
 The ``better-precompiled-headers'' approach dictates transitive name
 visibility. Namespaces remain the (only) method by which name visibility is
 managed, and modules are completely orthogonal.
 
-\subsubsection{Pro intransitive}
+\paragraph{Pro intransitive}
 
 The existing practice from almost all other languages dictates non-transitivity
 of name visibility. This would mean explicit module imports everywhere, with
 allowance for re-exporting to enable \emph{curated} library APIs.
 
-\subsection{Replace Precompiled Headers: the \emph{Parse It Once} Argument}
+
+\subsection{Replacing precompiled headers}
+Modules offer an option for replacing precompiled headers. There are various
+reasons that precompiled headers are problematic, and adopting their solutions
+as design objective translates into certain choices. Therefore, we must know the
+problems with precompiled headers.
+
+\subsubsection{Compilation Speed: The \emph{Parse It Once} Argument}
 
 C++ code takes a long time to parse, and longer to compile. There are many
 reasons for this, but having to read millions of lines of files to just get the
@@ -152,7 +166,7 @@ able to load only the needed code at the time it is needed, and share that
 effort, the hope is that compilation times would drop.
 
 
-\subsection{Replace Precompiled Headers: the \emph{Highlander} Argument}
+\subsubsection{The \emph{Highlander} Argument}
 
 Precompiled headers are also very inflexible, since \emph{there can only be
 one}, and therefore encourage having a pinch-point in the compilation graph
@@ -163,7 +177,7 @@ The hope is that modules would act as mix-and-match precompiled headers,
 keeping compilation quick while maintaining strict ``as needed'' import policies.
 
 
-\subsection{Better Namespaces: Module Namespaces}
+\subsection{The coupling between modules and namespaces}
 
 Some have the wish that modules would be better namespaces -- modules would
 introduce namespaces, completing the C++-is-a-better-python dream\footnote{The
@@ -178,6 +192,18 @@ namespaces may need to be orthogonal.
 Although the concepts may be orthogonal, many expect that there will be a
 strong correlation between modules and (outer) namespaces. The following ideas
 have been proposed to help with the common cases.
+
+\subsubsection{No coupling}
+
+This class of proposals sees modules and namespaces as completely orthogonal.
+Modules do not imply namespaces, they are file-based while namespaces are
+scoped, etc.
+
+The problem with this approach is that while the two features are necessarily
+\emph{independent} (to borrow from linear algebra), they are far from
+\emph{orthogonal} when one considers how they are likely to be used. Not
+offering any support to help DRY\footnote{Don't Repeat Yourself} can lead to
+confusion and poor ease-of-use.
 
 
 \subsubsection{Introduce a namespace by default and offer an opt-out.}
@@ -197,7 +223,8 @@ struct mystruct; // foo::bar::mystruct;
 };
 \end{minted}
 
-This style of opt-out was specified in a paper by Tristan Bridle.~\citep{P0665R0}
+This style of opt-out was specified in a paper by Tristan
+Bridle.~\citep{P0665R0}\footnote{The paper is not about modules.}
 
 
 \subsubsection{Module-namespaces: Introduce a scope}
@@ -227,7 +254,7 @@ struct std::hash<foo::bar::mystruct>
 \end{minted}
 
 
-\subsection{Better Namespaces: visibility qualifiers on names}
+\subsection{What do modules expose, and how?}
 
 Since modules seem to have the ambition of offering tight control of entities,
 they pose a question about what exactly they expose. The space of options
@@ -252,8 +279,8 @@ not accessible (e.g. the name is private and the call is outside the module).
 \subsubsection{Expose entities}
 
 Only expose entities, explicitly. From outside the module, the private entities
-are hidden from all name lookup (i.e. non-exported function names do not appear
-in the overload set).
+are hidden from all name lookup (i.e. non-exported function overloads do not
+appear in the overload set at all).
 
 
 \subsection{Are macros exported?}
