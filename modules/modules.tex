@@ -56,6 +56,13 @@ people have with modules, so that constructive argument can happen along the
 issues and requirements. The issues are presented in as orthogonal a manner as
 possible, so that loops in arguing are avoidable.
 
+\subsection{A note on terminology}
+
+This paper uses the word \emph{name} in several contexts. It can be taken to
+mean \emph{id-expression} as defined in [expr.prim.id]~\citep{N4659} or can
+be extended to include the names of macros. We attempt to call out the specific
+meaning in the cases where it is important. We also use the term \emph{entity}
+as defined in \texttt{[basic]}.~\citep{N4659}
 
 \section{What Are Modules For?}
 
@@ -68,13 +75,11 @@ subsequently addressed, they will keep surfacing.
 \subsection{Reducing the need for detail namespaces}
 
 Name lookup is a flexible and powerful feature of C++, but the rules are
-complex and it is no secret that the set of names\footnote{This paper uses
-``name'' in an overloaded fashion. It can mean \emph{id-expression} (as defined
-in [expr.prim.id]) or can be extended to names of macros.} that are visible in
-user code is often larger than would be desirable. Customisation points further
-complicate matters.
+complex and it is no secret that the set of names (including names of macros)
+that are visible in user code is often larger than would be desirable.
+Customisation points further complicate matters.
 
-To do this, private (and increasingly often) public features of libraries are
+To do this, private (and, increasingly often, public) features of libraries are
 implemented in a library-specific detail namespace, with externally visible
 names pulled into the public-facing main namespace with \texttt{using}
 directives.
@@ -84,8 +89,7 @@ compiler diagnostic messages longer than would be ideal.
 
 One view is that it would be nice for modules to obviate the need to use detail
 namespaces to hide names by allowing name lookup outside the module to only
-find entities\footnote{Used as per the standard, defined in [basic]} that are
-explicitly exported.
+find entities that are explicitly exported.
 
 
 \subsection{Strict ordering guarantees for code inclusion}
@@ -107,33 +111,34 @@ despite already being in the \texttt{std} namespace -- macros are not allowed
 to redefine names like that, since they are reserved. Regular libraries deal
 with this problem by assuming it won't happen.
 
-If modules were specified to guarantee a strict partial ordering, such that \emph{only
-the code that ``happened\footnote{We use ``happened'' descriptively, because
-it means different things depending on what the other features of modules end up
-being. Naiively, one could define it as simple textual inclusion of all (and
-\emph{only}) transitive dependencies of a module. Since those could also be
-modules in their own right, the actual specification of this feature is
-difficult, and so we weasel with ``happened''.}'' above this module is the code
-it specifically imports} -- possibly applied \emph{non}-transitively for name
-visibility -- then this issue disappears, and the standard library (along with
-every other library) can stop worrying about macros rewriting its code.
+If modules were specified to guarantee a strict partial ordering, such that
+\emph{only the code that happened\footnote{We use ``happened'' descriptively,
+because it means different things depending on how the other features of
+modules end up being specified. In the first instance, one could define it as
+simple textual inclusion of all (and \emph{only}) transitive dependencies of a
+module. Since those could also be modules in their own right, the actual
+specification of this feature is difficult, and so we cautiously use the word
+``happened''.} above this module is the code it specifically imports} --
+possibly applied \emph{non}-transitively for name visibility -- then this issue
+disappears, and the standard library (along with every other library) can stop
+worrying about macros rewriting its code.
 
 \subsection{Transitivity of name visibility}
-Do we want \texttt{import module;} to import names from modules the module
-imports, transitively, or not?
+
+Should \texttt{import moduleA;} also import the names from modules imported by
+\texttt{moduleA} transitively, or not?
 
 \subsubsection{Pro transitive}
-The ``better-precompiled-headers'' approach dictates transitive name visibility.
-It admits the primacy of namespaces to manage name visibility, and stays
-completely orthogonal.
+
+The ``better-precompiled-headers'' approach dictates transitive name
+visibility. Namespaces remain the (only) method by which name visibility is
+managed, and modules are completely orthogonal.
 
 \subsubsection{Pro intransitive}
-The existing practice from practically all other languages dictates
-non-transitivity of name visibility.
 
-This would mean explicit module imports everywhere, with allowance for
-re-exporting to enable ``curated'' library apis.
-
+The existing practice from almost all other languages dictates non-transitivity
+of name visibility. This would mean explicit module imports everywhere, with
+allowance for re-exporting to enable \emph{curated} library APIs.
 
 \subsection{Replace Precompiled Headers: the \emph{Parse It Once} Argument}
 
@@ -181,7 +186,7 @@ A module can introduce a namespace by default, and then offer ways of
 ``escaping'', for instance:
 
 \begin{minted}{cpp}
-// all names implicitly in the foo::bar namespace
+// All names implicitly in the foo::bar namespace and foo::bar module.
 module foo::bar;
 
 struct mystruct; // foo::bar::mystruct;
@@ -201,14 +206,15 @@ A special syntax would enable introducing the module and its namespace together:
 
 \begin{minted}{cpp}
 module namespace foo::bar {
-  // all names in the foo::bar namespace and foo::bar module.
+  // All names in the foo::bar namespace and foo::bar module.
   struct mystruct;
 } // end module foo::bar
 
 module namespace foo::baz {
-  // look ma, two modules per file!
+  // Look ma, two modules per file!
   struct mystruct;
 }
+
 // Entities defined here are only visible within the file and cannot be exported.
 namespace std {
 struct std::hash<foo::bar::mystruct>
@@ -217,7 +223,7 @@ struct std::hash<foo::bar::mystruct>
          foo::bar::mystruct const&)
        const;
 };
-} // std
+} // namespace std
 \end{minted}
 
 
@@ -262,38 +268,37 @@ From \texttt{MAX\_SIZE} to \texttt{assert} to \texttt{BOOST\_HANA\_STRING},
 macros are a part of the public interface of many libraries, and therefore
 modules should offer a way to expose them, goes the argument.
 
-\textbf{Workaround:} The macro interface of the library can be supplied in a
-separate header meant for the \texttt{include} mechanism that also imports the
-non-macro part of the interface it depends on. This makes the way modules would
-work with the preprocessor far more obvious.
+A simple workaround is to supply the macro interface of the library in a
+separate header meant for the \texttt{include} mechanism. This header would
+also import the non-macro part of the interface it depends on. This makes the
+way modules would work with the preprocessor far more obvious.
 
-\textbf{But:} this makes the general answer to \emph{how do I use libraries} a
-lot \emph{less} obvious\footnote{Will go something along the lines of ``If you
-need \texttt{BOOST\_FUSION\_ADAPT\_STRUCT}, use the library through
-\texttt{\#include “boost/fusion.hpp”}, otherwise just do 
-\texttt{import boost.fusion;}.'' -- Which is confusing.}.
+However, this makes the general answer to \emph{how do I use libraries} a lot
+\emph{less} obvious; the answer may depend on whether you (or your clients) use
+the macros, or prefer a clean interface. Further, you may wish to consume the
+macros internally, but hide them from your clients. 
 
-\textbf{On the other hand} it means libraries that are \texttt{import}ed will
-\emph{never} leak macros, which is a really nice and strong guarantee to have.
+The advantage is that libraries that are \texttt{import}ed will \emph{never}
+leak macros, which is a strong guarantee that is nice to have.
 
-
-\subsubsection{Contra: It breaks the compilation model}
+\subsubsection{Contra (part 1): It breaks the compilation model}
 
 If macros are exported, then how can the import directive run after the
 preprocessor?
 
 
-\subsubsection{Contra: I want to guarantee my import doesn't rewrite my source code}
+\subsubsection{Contra (part 2): I want to guarantee my import doesn't rewrite my source code}
 
-It is a valid concern, but can be solved independently of macro exports by
-looking at strict ordering guarantees for inclusion. Presumably you can trust
-the libraries you import explicitly.
+This is a valid concern, but can probably be solved independently of macro
+exports by looking at strict ordering guarantees for inclusion. It is assumed
+that you can trust the libraries you import explicitly.
 
 
 \section{Acknowledgements}
-We would like to thank Vittorio Romeo for a few suggestions, Jackie Kay for a
-great highlight of readability concerns and style suggestions, and Louis Dionne
-for proofreading the paper.
+
+We would like to thank Vittorio Romeo for a number of helpful suggestions,
+Jackie Kay for highlighting readability concerns and style suggestions, and
+Louis Dionne for proofreading the paper.
 
 \bibliographystyle{amsplain}
 
@@ -303,6 +308,11 @@ for proofreading the paper.
     Gabriel Dos Reis.
         \textit{Working Draft, Extensions to C++ for Modules (N4647)}
         \url{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4647.pdf}
+
+\bibitem{N4659}
+    ISO/IEC SC22 WG21
+        \textit{Working Draft, Standard for Programming Language C++}
+        \url{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4659.pdf}
 
 \bibitem{P0665R0}
     Tristan Brindle.
