@@ -68,8 +68,10 @@ subsequently addressed, they will keep surfacing.
 \subsection{Reducing the need for detail namespaces}
 
 Name lookup is a flexible and powerful feature of C++, but the rules are
-complex and it is no secret that the set of names that are visible in user code
-is often larger than would be desirable. Customisation points further
+complex and it is no secret that the set of names\footnote{This paper uses
+``name'' in an overloaded fashion. It can mean \emph{id-expression} (as defined
+in [expr.prim.id]) or can be extended to names of macros.} that are visible in
+user code is often larger than would be desirable. Customisation points further
 complicate matters.
 
 To do this, private (and increasingly often) public features of libraries are
@@ -82,7 +84,8 @@ compiler diagnostic messages longer than would be ideal.
 
 One view is that it would be nice for modules to obviate the need to use detail
 namespaces to hide names by allowing name lookup outside the module to only
-find entities that are explicitly exported.
+find entities\footnote{Used as per the standard, defined in [basic]} that are
+explicitly exported.
 
 
 \subsection{Strict ordering guarantees for code inclusion}
@@ -104,11 +107,32 @@ despite already being in the \texttt{std} namespace -- macros are not allowed
 to redefine names like that, since they are reserved. Regular libraries deal
 with this problem by assuming it won't happen.
 
-If modules were specified to guarantee a strict ordering, such that \emph{only
-the code that ``happened'' above this module is the code it specifically
-imports} -- applied \emph{non}-transitively for name visibility -- then this
-issue disappears, and the standard library (along with every other library) can
-stop worrying about macros rewriting its code.
+If modules were specified to guarantee a strict partial ordering, such that \emph{only
+the code that ``happened\footnote{We use ``happened'' descriptively, because
+it means different things depending on what the other features of modules end up
+being. Naiively, one could define it as simple textual inclusion of all (and
+\emph{only}) transitive dependencies of a module. Since those could also be
+modules in their own right, the actual specification of this feature is
+difficult, and so we weasel with ``happened''.}'' above this module is the code
+it specifically imports} -- possibly applied \emph{non}-transitively for name
+visibility -- then this issue disappears, and the standard library (along with
+every other library) can stop worrying about macros rewriting its code.
+
+\subsection{Transitivity of name visibility}
+Do we want \texttt{import module;} to import names from modules the module
+imports, transitively, or not?
+
+\subsubsection{Pro transitive}
+The ``better-precompiled-headers'' approach dictates transitive name visibility.
+It admits the primacy of namespaces to manage name visibility, and stays
+completely orthogonal.
+
+\subsubsection{Pro intransitive}
+The existing practice from practically all other languages dictates
+non-transitivity of name visibility.
+
+This would mean explicit module imports everywhere, with allowance for
+re-exporting to enable ``curated'' library apis.
 
 
 \subsection{Replace Precompiled Headers: the \emph{Parse It Once} Argument}
@@ -177,7 +201,7 @@ A special syntax would enable introducing the module and its namespace together:
 
 \begin{minted}{cpp}
 module namespace foo::bar {
-  // all names in the foo::bar namespace
+  // all names in the foo::bar namespace and foo::bar module.
   struct mystruct;
 } // end module foo::bar
 
@@ -232,34 +256,44 @@ This is quite possibly the biggest current disagreement. This section summarises
 the arguments and counter-arguments.
 
 
-\subsubsection{It breaks the compilation model}
-
-If macros are exported, then how can the import directive run after the
-preprocessor?
-
-\subsubsection{I want to guarantee my import doesn't rewrite my source code}
-
-It is a valid concern, but can be solved independently of macro exports by
-looking at strict ordering guarantees for inclusion. Presumably you can trust
-the libraries you import explicitly.
-
-\subsubsection{Macros do appear in public interfaces of libraries}
+\subsubsection{Pro: Macros do appear in public interfaces of libraries}
 
 From \texttt{MAX\_SIZE} to \texttt{assert} to \texttt{BOOST\_HANA\_STRING},
 macros are a part of the public interface of many libraries, and therefore
 modules should offer a way to expose them, goes the argument.
 
-A possible solution (if your answer is still \emph{no}) is to offer the macros
-in a separate header meant for the \texttt{include} mechanism that imports the
+\textbf{Workaround:} The macro interface of the library can be supplied in a
+separate header meant for the \texttt{include} mechanism that also imports the
 non-macro part of the interface it depends on. This makes the way modules would
-work with the preprocessor far more obvious, but on the flip side makes the
-answer to \emph{how do I use this library} a lot \emph{less} obvious.  On the
-other hand, it means libraries that are \texttt{import}ed will \emph{never}
-leak macros.
+work with the preprocessor far more obvious.
+
+\textbf{But:} this makes the general answer to \emph{how do I use libraries} a
+lot \emph{less} obvious\footnote{Will go something along the lines of ``If you
+need \texttt{BOOST\_FUSION\_ADAPT\_STRUCT}, use the library through
+\texttt{\#include “boost/fusion.hpp”}, otherwise just do 
+\texttt{import boost.fusion;}.'' -- Which is confusing.}.
+
+\textbf{On the other hand} it means libraries that are \texttt{import}ed will
+\emph{never} leak macros, which is a really nice and strong guarantee to have.
+
+
+\subsubsection{Contra: It breaks the compilation model}
+
+If macros are exported, then how can the import directive run after the
+preprocessor?
+
+
+\subsubsection{Contra: I want to guarantee my import doesn't rewrite my source code}
+
+It is a valid concern, but can be solved independently of macro exports by
+looking at strict ordering guarantees for inclusion. Presumably you can trust
+the libraries you import explicitly.
+
 
 \section{Acknowledgements}
-We would like to thank Vittorio Romeo for a few suggestions, and Jackie Kay and
-Louis Dionne for proofreading the paper.
+We would like to thank Vittorio Romeo for a few suggestions, Jackie Kay for a
+great highlight of readability concerns and style suggestions, and Louis Dionne
+for proofreading the paper.
 
 \bibliographystyle{amsplain}
 
