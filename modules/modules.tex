@@ -1,4 +1,5 @@
 \documentclass[reqno]{article}
+\usepackage{fontspec}
 \usepackage[english]{babel}
 \usepackage[reqno]{amsmath}
 \usepackage{amssymb}
@@ -10,12 +11,24 @@
     ]{geometry}
 \usepackage{fancybox}
 \usepackage{url}
+\usepackage[
+    breaklinks,
+    citecolor=blue,
+    colorlinks,
+    linkcolor=blue,
+    urlcolor=blue,
+    ]{hyperref}
 \usepackage{minted}
 \usepackage{color}
 \usepackage{graphicx}
 \usepackage{epstopdf}
 \usepackage{fancyhdr}
-
+\usepackage[
+    comma,
+    numbers,
+    sort&compress,
+    square,
+    ]{natbib}
 \usepackage{amsthm}
 \usepackage{multicol}
 
@@ -26,48 +39,50 @@
 
 \begin{document}
 \maketitle
-%\begin{multicols}{2}
 \section{Aim of this paper}
 
-This paper aims to be the definitive guide to arguing about Modules. To do
-that, it presents all the questions and decisions that need to be taken in
-order to arrive at a coherent proposal.
+The Modules TS \citep{N4647} has generated much discussion. This paper aims to
+capture the questions and decisions that are necessary to arrive at a coherent
+proposal.
 
-This paper takes no stance on any of the issues highlighted. Where possible, the
-differing opinions are cited and summarized in the summary section for the
-question.
+This paper takes no stance on any of the issues highlighted. Where possible,
+the differing opinions are cited and summarised in the discussion of each
+section. It is likely that there are issues and discussions of which the
+authors are not aware. We do not claim to represent every facet of the design
+space, and expect further iteration for refinement.
 
-The hope of the authors of this paper is to untangle the various issues people
-have with modules, so that constructive argument can happen along the issues,
-and not around FUD. The issues are presented in as orthogonal a manner as
+The goal of the authors of this paper is to disentangle the various issues
+people have with modules, so that constructive argument can happen along the
+issues and requirements. The issues are presented in as orthogonal a manner as
 possible, so that loops in arguing are avoidable.
 
 
 \section{What Are Modules For?}
 
 This section presents all the various answers to the titular question that the
-authors are aware of. It is highly probable that not all the answers are
-mutually compatible, realistic, or even on topic. However, unless stated and
+authors are aware of. It is probable that not all the answers are mutually
+compatible, realistic, or even on topic. However, unless stated and
 subsequently addressed, they will keep surfacing.
 
 
 \subsection{Reducing the need for detail namespaces}
 
-Name lookup is a highly convoluted, flexible, and powerful feature of C++. It
-is no secret that keeping the set of visible names sane in user code while
-somehow allowing customization points keeps library authors awake at night. 
+Name lookup is a flexible and powerful feature of C++, but the rules are
+complex and it is no secret that the set of names that are visible in user code
+is often larger than would be desirable. Customisation points further
+complicate matters.
 
-To do this, private (and more and more often) public features of libraries are
+To do this, private (and increasingly often) public features of libraries are
 implemented in a library-specific detail namespace, with externally visible
 names pulled into the public-facing main namespace with \texttt{using}
 directives.
 
-This keeps implementations sane, but compiler error messages then include the
-detail namespace, making names longer than needed.
+This keeps implementations sane, but has the unfortunate side-effect of making
+compiler diagnostic messages longer than would be ideal.
 
-It would be nice for modules to obviate the need to use detail namespaces to
-hide names by allowing name lookup outside the module to only find entities that
-are explicitly exported.
+One view is that it would be nice for modules to obviate the need to use detail
+namespaces to hide names by allowing name lookup outside the module to only
+find entities that are explicitly exported.
 
 
 \subsection{Strict ordering guarantees for code inclusion}
@@ -80,83 +95,81 @@ new names into their namespaces due to code like
 #include "mylibrary.hpp"
 \end{minted}
 
-where \texttt{otherlibrary} defines some names that clash with
+where \texttt{otherlibrary} defines some names (or macros) that clash with
 \texttt{mylibrary}.
 
-An example of such a problem is the implementation of the standard library! This
-is one of the reasons all names in it need to use the \texttt{\_\_name} and
-\texttt{\_Name} conventions, despite already being in the \texttt{std} namespace
-- macros are not allowed to redefine names like that, since they are reserved.
+An example of such a problem is the implementation of the standard library; all
+names in it need to use the \texttt{\_\_name} and \texttt{\_Name} conventions,
+despite already being in the \texttt{std} namespace -- macros are not allowed
+to redefine names like that, since they are reserved. Regular libraries deal
+with this problem by assuming it won't happen.
 
-Regular libraries deal with this problem by assuming it won't happen and going
-“la la la this is real-world code”.
-
-If modules specified a strict ordering guarantee of \emph{the only code that
-“happened” above this module is the code it specifically imports - and that goes
-NON-transitively for name visibility}, this is no longer an issue, and the
-standard library, along with every other library, can stop worrying about macros
-rewriting its code.
+If modules were specified to guarantee a strict ordering, such that \emph{only
+the code that ``happened'' above this module is the code it specifically
+imports} -- applied \emph{non}-transitively for name visibility -- then this
+issue disappears, and the standard library (along with every other library) can
+stop worrying about macros rewriting its code.
 
 
 \subsection{Replace Precompiled Headers: the \emph{Parse It Once} Argument}
 
-C++ Code takes a long time to parse, and longer to compile. There are many
+C++ code takes a long time to parse, and longer to compile. There are many
 reasons for this, but having to read millions of lines of files to just get the
 declarations and definitions of all the visible, invisible, and irrelevant
 names, for \emph{every compilation unit}, is one of them.
 
 If there was a way to parse a header once, expose a data structure that would be
 able to load only the needed code at the time it is needed, and share that
-effort, the hope is compilation times would drop.
+effort, the hope is that compilation times would drop.
 
 
 \subsection{Replace Precompiled Headers: the \emph{Highlander} Argument}
 
 Precompiled headers are also very inflexible, since \emph{there can only be
-one}, and therefore encourage having a pinch-point in the compilation graph that
-necessitates the recompilation of everything on every minute change of any
+one}, and therefore encourage having a pinch-point in the compilation graph
+that necessitates the recompilation of everything on every minor change of any
 header.
 
-The hope is modules would act as mix-and-match precompiled headers, keeping
-compilation quick while maintaining strict “as needed” import policies.
+The hope is that modules would act as mix-and-match precompiled headers,
+keeping compilation quick while maintaining strict ``as needed'' import policies.
 
 
 \subsection{Better Namespaces: Module Namespaces}
 
-Some have the wish that modules would be better namespaces - modules would
+Some have the wish that modules would be better namespaces -- modules would
 introduce namespaces, completing the C++-is-a-better-python dream\footnote{The
-authors make no claim as to whether this is a dream worth having}.
+authors make no claim as to whether this is a dream worth having.}.
 
-Unfortunately for this one, it is impossible - modules need to be able to
-provide specializations of \texttt{std::hash}, at least, which necessitates the
-orthogonality of modules and namespaces.
+This goal is complicated by the necessity for code (which may be modularised)
+to define entities in other namespaces. Standard library customisation points
+serve as a prime example; it is desirable for a module to be able to define a
+specialisation of e.g. \texttt{std::hash}, which suggests that modules and
+namespaces may need to be orthogonal.
 
-However, some expect that modules and namespaces, while orthogonal, will be
-substantially \emph{correlated}. They propose the following ideas to help the
-common cases.
+Although the concepts may be orthogonal, many expect that there will be a
+strong correlation between modules and (outer) namespaces. The following ideas
+have been proposed to help with the common cases.
 
 
 \subsubsection{Introduce a namespace by default and offer an opt-out.}
 
 A module can introduce a namespace by default, and then offer ways of
-“escaping”, for instance:
+``escaping'', for instance:
 
 \begin{minted}{cpp}
-// all names implicitly in the
-// foo::bar namespace
+// all names implicitly in the foo::bar namespace
 module foo::bar;
 
 struct mystruct; // foo::bar::mystruct;
+
 ::std::hash<mystruct> {
   std::size_t operator(mystruct const&)
       const;
 };
 \end{minted}
 
-The opt-out has been specified in a paper by Tristan Brindle: \emph{Allowing
-Class Template Specializations in Unrelated Namespaces}\footnote{
-\url{https://github.com/tcbrindle/specialization_proposal/blob/master/P0665r0.pdf}}
-.
+This style of opt-out was specified in a paper by Tristan Bridle.~\citep{P0665R0}
+
 
 \subsubsection{Module-namespaces: Introduce a scope}
 
@@ -172,9 +185,7 @@ module namespace foo::baz {
   // look ma, two modules per file!
   struct mystruct;
 }
-// Entities defined here are
-// only visible within the
-// file and cannot be exported.
+// Entities defined here are only visible within the file and cannot be exported.
 namespace std {
 struct std::hash<foo::bar::mystruct>
 {
@@ -190,27 +201,34 @@ struct std::hash<foo::bar::mystruct>
 
 Since modules seem to have the ambition of offering tight control of entities,
 they pose a question about what exactly they expose. The space of options
-follows. These are mostly mutually incompatible, except for the whole macros
-story, which has a separate section completely.
+follows. These are mostly mutually incompatible -- macros are dealt with in a
+separate section.
+
 
 \subsubsection{Expose names}
+
 In this way, once you've exported a name, it's visible, along with all its
 overloads (for functions) or specializations (for types).
 
+
 \subsubsection{Same as class specifiers}
+
 Have access specifiers \texttt{public}, \texttt{private} and \texttt{protected}
 work for modules the same way as they work for classes: expose names for the
 purposes of overload set resolution, but break if the resolved-to entity is
-not accessible (eg. private and the call is outside the module).
+not accessible (e.g. the name is private and the call is outside the module).
+
 
 \subsubsection{Expose entities}
+
 Only expose entities, explicitly. From outside the module, the private entities
-do not even appear in the overload set.
+are hidden from all name lookup (i.e. non-exported function names do not appear
+in the overload set).
 
 
 \subsection{Are macros exported?}
 
-This is quite possibly the biggest current disagreement. This section summarizes
+This is quite possibly the biggest current disagreement. This section summarises
 the arguments and counter-arguments.
 
 
@@ -223,7 +241,7 @@ preprocessor?
 
 It is a valid concern, but can be solved independently of macro exports by
 looking at strict ordering guarantees for inclusion. Presumably you can trust
-the libraries you include explicitly.
+the libraries you import explicitly.
 
 \subsubsection{Macros do appear in public interfaces of libraries}
 
@@ -235,15 +253,28 @@ A possible solution (if your answer is still \emph{no}) is to offer the macros
 in a separate header meant for the \texttt{include} mechanism that imports the
 non-macro part of the interface it depends on. This makes the way modules would
 work with the preprocessor far more obvious, but on the flip side makes the
-answer to \emph{how do I use this library} a whole lot \emph{less} obvious.
-Again, on the flip side, it means libraries that are \texttt{import}ed will
-\emph{never} leak macros.
+answer to \emph{how do I use this library} a lot \emph{less} obvious.  On the
+other hand, it means libraries that are \texttt{import}ed will \emph{never}
+leak macros.
 
 \section{Acknowledgements}
 We would like to thank Vittorio Romeo for a few suggestions, and Jackie Kay and
 Louis Dionne for proofreading the paper.
 
-%\end{multicols}
 \bibliographystyle{amsplain}
-% \bibliography{mybibliography}
+
+\begin{thebibliography}{9}
+
+\bibitem{N4647}
+    Gabriel Dos Reis.
+        \textit{Working Draft, Extensions to C++ for Modules (N4647)}
+        \url{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4647.pdf}
+
+\bibitem{P0665R0}
+    Tristan Brindle.
+        \textit{Allowing Class Template Specialisations in Unrelated Namespaces}
+        \url{https://github.com/tcbrindle/specialization_proposal/blob/master/P0665r0.pdf}
+
+\end{thebibliography}
+
 \end{document}
