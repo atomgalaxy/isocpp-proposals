@@ -321,11 +321,20 @@ exports by looking at strict ordering guarantees for inclusion. It is assumed
 that you can trust the libraries you import explicitly.
 
 
+\subsection{A Better Pimpl}
+Modules should be able to be a compilation barrier. If only the (suitably
+defined) non-externally visible parts of a module change, a suitably mature
+implementation of a build system should not need to recompile the dependents.
+
+This is mostly a quality-of-implemenation issue.
+
+
 \section{Acknowledgements}
 
 We would like to thank Vittorio Romeo for a number of helpful suggestions,
-Jackie Kay for highlighting readability concerns and style suggestions, and
-Louis Dionne for proofreading the paper.
+Jackie Kay for highlighting readability concerns and style suggestions, Tomas
+Puverle for the point about the better Pimpl, and Louis Dionne for proofreading
+the paper.
 
 \bibliographystyle{amsplain}
 
