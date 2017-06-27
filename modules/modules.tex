@@ -41,7 +41,7 @@
 \maketitle
 \section{Aim of this paper}
 
-The Modules TS \citep{N4647} has generated much discussion. This paper aims to
+The Modules TS \citep{N4667} has generated much discussion. This paper aims to
 capture the questions and decisions that are necessary to arrive at a coherent
 proposal.
 
@@ -51,10 +51,10 @@ section. It is likely that there are issues and discussions of which the
 authors are not aware. We do not claim to represent every facet of the design
 space, and expect further iteration for refinement.
 
-The goal of the authors of this paper is to disentangle the various issues
-people have with modules, so that constructive argument can happen along the
-issues and requirements. The issues are presented in as orthogonal a manner as
-possible, so that loops in arguing are avoidable.
+Our goal is to disentangle the various issues people have with modules, so that
+constructive argument can happen along the issues and requirements. The issues
+are presented in as orthogonal a manner as possible, so that loops in arguing
+are avoidable.
 
 \subsection{A note on terminology}
 
@@ -64,19 +64,19 @@ be extended to include the names of macros. We attempt to call out the specific
 meaning in the cases where it is important. We also use the term \emph{entity}
 as defined in \texttt{[basic]}.~\citep{N4659}
 
-\section{What Are Modules For?}
+\section{What are modules for?}
 
 This section presents all the various answers to the titular question that the
 authors are aware of. It is probable that not all the answers are mutually
 compatible, realistic, or even on topic. However, unless stated and
 subsequently addressed, they will keep surfacing.
 
-Put another way, the subsections should be read in the context of \emph{Should
+The subsections should be read in the context of the question: \emph{should
 this be a design goal for modules?}
 
 \subsection{Tight control of visible names and entities}
 
-The various subsections deal with the visibility semantics of modules. 
+The subsections below deal with the visibility semantics of modules. 
 
 \subsubsection{Control of exported names: Reduce the need for detail namespaces}
 
@@ -149,12 +149,14 @@ allowance for re-exporting to enable \emph{curated} library APIs.
 
 
 \subsection{Replacing precompiled headers}
-Modules offer an option for replacing precompiled headers. There are various
-reasons that precompiled headers are problematic, and adopting their solutions
-as design objective translates into certain choices. Therefore, we must know the
-problems with precompiled headers.
 
-\subsubsection{Compilation Speed: The \emph{Parse It Once} Argument}
+A widely held view is that modules offer an alternative to precompiled headers.
+The code inclusion model can be problematic, and precompiled headers do not
+offer solutions to all of the problems. In this section, we review the issues
+and reflect on how they impact on the design space for modules.
+
+
+\subsubsection{Compilation speed: The \emph{parse it once} argument}
 
 C++ code takes a long time to parse, and longer to compile. There are many
 reasons for this, but having to read millions of lines of files to just get the
@@ -166,7 +168,7 @@ able to load only the needed code at the time it is needed, and share that
 effort, the hope is that compilation times would drop.
 
 
-\subsubsection{The \emph{Highlander} Argument}
+\subsubsection{The \emph{Highlander} argument}
 
 Precompiled headers are also very inflexible, since \emph{there can only be
 one}, and therefore encourage having a pinch-point in the compilation graph
@@ -196,15 +198,14 @@ have been proposed to help with the common cases.
 \subsubsection{No coupling}
 
 This class of proposals sees modules and namespaces as completely orthogonal.
-Modules do not imply namespaces, they are file-based while namespaces are
-scoped, etc.
+In this world, modules do not imply namespaces, they are file-based while
+namespaces are scoped, etc.
 
-The problem with this approach is that while the two features are necessarily
-\emph{independent} (to borrow from linear algebra), they are far from
-\emph{orthogonal} when one considers how they are likely to be used. Not
-offering any support to help DRY\footnote{Don't Repeat Yourself} can lead to
-confusion and poor ease-of-use.
-
+The problem with this approach is that while the two features may be
+\emph{independent},\footnote{In the sense of linear algebra.} they are likely
+to be used in a way that is not orthogonal. That is to say, it is worth
+considering how to introduce equivalently named modules and namespaces without
+undue repetition.
 
 \subsubsection{Introduce a namespace by default and offer an opt-out.}
 
@@ -321,29 +322,34 @@ exports by looking at strict ordering guarantees for inclusion. It is assumed
 that you can trust the libraries you import explicitly.
 
 
-\subsection{A Better Pimpl}
-Modules should be able to be a compilation barrier. If only the (suitably
-defined) non-externally visible parts of a module change, a suitably mature
-implementation of a build system should not need to recompile the dependents.
+\subsection{A better pimpl}
 
-This is mostly a quality-of-implemenation issue.
+The \emph{pimpl} idiom is often used to break dependencies during compilation
+and thus avoid recompiling large amounts of code when an implementation detail
+is changed.  Modules may be able to provide a better compilation barrier. If
+only the (suitably defined) non-externally visible parts of a module change, a
+suitably mature implementation of a build system should not need to recompile
+the dependents.
+
+This is mostly a quality-of-implementation issue, although the answers to some
+of the questions above will affect how realistic it is to achieve such a goal.
 
 
 \section{Acknowledgements}
 
 We would like to thank Vittorio Romeo for a number of helpful suggestions,
 Jackie Kay for highlighting readability concerns and style suggestions, Tomas
-Puverle for the point about the better Pimpl, and Louis Dionne for proofreading
-the paper.
+Puverle for the point about compilation barriers, and Louis Dionne and Daven
+Gahir for proofreading the paper.
 
 \bibliographystyle{amsplain}
 
 \begin{thebibliography}{9}
 
-\bibitem{N4647}
+\bibitem{N4667}
     Gabriel Dos Reis.
-        \textit{Working Draft, Extensions to C++ for Modules (N4647)}
-        \url{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4647.pdf}
+        \textit{Working Draft, Extensions to C++ for Modules (N4667)}
+        \url{http://www.open-std.org/jtc1/sc22/wg21/docs/papers/2017/n4667.pdf}
 
 \bibitem{N4659}
     ISO/IEC SC22 WG21
@@ -352,7 +358,7 @@ the paper.
 
 \bibitem{P0665R0}
     Tristan Brindle.
-        \textit{Allowing Class Template Specialisations in Unrelated Namespaces}
+        \textit{Allowing Class Template Specializations in Unrelated Namespaces}
         \url{https://github.com/tcbrindle/specialization_proposal/blob/master/P0665r0.pdf}
 
 \end{thebibliography}
